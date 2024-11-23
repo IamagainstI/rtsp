@@ -1,1 +1,0 @@
-C:\Users\John\source\rust\rtsp\protocols\sdp\target\debug\libsdp.rlib: C:\Users\John\source\rust\rtsp\abstraction\src\lib.rs C:\Users\John\source\rust\rtsp\abstraction\src\parsing\mod.rs C:\Users\John\source\rust\rtsp\abstraction\src\parsing\payload_parser.rs C:\Users\John\source\rust\rtsp\protocols\sdp\src\lib.rs C:\Users\John\source\rust\rtsp\protocols\sdp\src\media_session.rs
