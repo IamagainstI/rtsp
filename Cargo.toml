@@ -1,0 +1,15 @@
+[package]
+authors = ["Anton Sivtsev <sivtsev.work@gmail.com>"]
+name = "rtsp"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+abstractions = { version = "0.1.0", path = "abstraction" }
+byteorder = { git = "https://github.com/BurntSushi/byteorder", version = "1.5.0" }
+chrono = { git = "https://github.com/chronotope/chrono", version = "0.4.38" }
+http = { git = "https://github.com/hyperium/http", version = "1.1.0" }
+sdp = { version = "0.1.0", path = "protocols/sdp" }
+timespan = { git = "https://github.com/fin-ger/rust-timespan/", version = "0.2.1" }

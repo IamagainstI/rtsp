@@ -1,0 +1,1 @@
+pub struct Bandwidth(pub String, pub u32);
