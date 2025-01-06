@@ -1,18 +1,15 @@
 pub mod media_session;
-mod bandwidth;
-mod origin;
+pub mod bandwidth;
+pub mod origin;
+pub mod media_attribute;
+pub mod media_description;
+pub mod data_transfer_mode;
+pub mod payload_type;
+pub mod network_type;
+pub mod address_type;
+pub mod time;
 
-// pub fn add(left: usize, right: usize) -> usize {
-//     left + right
-// }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn it_works() {
-//         let result = add(2, 2);
-//         assert_eq!(result, 4);
-//     }
-// }
+const RAW_SEPARATOR: u8 = '\n' as u8;
+const KEY_VALUE_SEPARATOR: u8 = '=' as u8;
+const TRIM: u8 = ' ' as u8;
+const TRIM_REF: &u8 = &TRIM;

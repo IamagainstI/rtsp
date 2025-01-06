@@ -1,9 +1,23 @@
+use std::io::Read;
+use std::net::TcpStream;
 use std::net::{IpAddr, Ipv4Addr};
 
-fn main() {
-    // Statements here are executed when the compiled binary is called.
+use byteorder::ReadBytesExt;
 
-    // Print text to the console.
-    println!("Hello World!");
-    IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1));
+fn destroy_box(c: Box<i32>) {
+    println!("Destroying a box that contains {}", c);
+
+    // `c` is destroyed and the memory freed
+}
+
+const B: i32 = 1;
+
+fn main() {
+    let a = &[1];
+    let b = 1;
+
+    match a {
+        [B] => print!("sdfsadf"),
+        _ => print!("s")
+    }
 }
