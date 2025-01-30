@@ -1,0 +1,13 @@
+[package]
+name = "sdp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+abstractions = { version = "0.1.0", path = "../../abstraction" }
+byteorder = { workspace = true }
+chrono = { workspace = true }
+encoding_rs = { workspace = true }
+http = { workspace = true }
+rstest = { workspace = true }
+timespan = { workspace = true }

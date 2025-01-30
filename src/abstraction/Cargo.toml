@@ -1,0 +1,19 @@
+[package]
+name = "abstractions"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+encoding_rs = { workspace = true }
+hex = { workspace = true }
+num = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+
+[lib]
+name = "abstractions"
+path = "src/lib.rs"
