@@ -1,4 +1,27 @@
-/// Data transfer mode
+/// Represents the data transfer mode in SDP.
+/// 
+/// The `DataTransferMode` enum corresponds to the `a=` field in SDP, which specifies
+/// the direction attribute for media streams.
+/// 
+/// According to RFC 4566, the `a=` field can have the following values:
+/// 
+/// - `inactive`: Neither send nor receive.
+/// - `recvonly`: Receive only.
+/// - `sendonly`: Send only.
+/// - `sendrecv`: Send and receive.
+/// 
+/// Example:
+/// 
+/// ```text
+/// a=sendrecv
+/// ```
+/// 
+/// # Variants
+/// 
+/// * `Inactive` - Neither send nor receive.
+/// * `Receive` - Receive only.
+/// * `Send` - Send only.
+/// * `SendReceive` - Send and receive.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DataTransferMode {
     /// Inactive
@@ -22,7 +45,7 @@ impl DataTransferMode {
         }
     }
 
-    pub fn bits(self) -> u8 {
+    pub fn as_u8(self) -> u8 {
         self as u8
     }
 }

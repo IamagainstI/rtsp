@@ -1,4 +1,4 @@
-use crate::media::codec::Codec;
+use crate::{media::codec::Codec, parsing::ParsingError};
 
 pub struct H265Codec {
     size_length: i32,
@@ -10,6 +10,7 @@ pub struct H265Codec {
 }
 
 impl Codec for H265Codec {
+
     fn samples_frequency(&self) -> i32 {
         todo!()
     }
@@ -18,11 +19,7 @@ impl Codec for H265Codec {
         todo!()
     }
 
-    fn parse_fmtp(&mut self, fmtp: &[u8]) -> Result<(), std::io::Error> {
-        todo!()
-    }
-    
-    fn new() -> Self {
+    fn from_fmtp(fmtp: &[u8]) -> Result<Self, ParsingError> {
         todo!()
     }
 }

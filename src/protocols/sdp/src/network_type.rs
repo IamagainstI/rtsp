@@ -1,4 +1,22 @@
-
+/// Represents the network type in SDP.
+/// 
+/// The `NetworkType` enum corresponds to the `c=` field in SDP, which specifies
+/// the network type for a connection data field.
+/// 
+/// According to RFC 4566, the `c=` field can have the following values:
+/// 
+/// - `IN`: Internet.
+/// 
+/// Example:
+/// 
+/// ```text
+/// c=IN IP4 192.0.2.10
+/// ```
+/// 
+/// # Variants
+/// 
+/// * `Internet` - Internet network type.
+#[derive(Debug, PartialEq)]
 pub enum NetworkType {
     Internet,
 }

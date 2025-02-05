@@ -42,6 +42,7 @@ use crate::{
 /// ```text
 /// o=jdoe 2890844526 2890842807 IN IP4 192.0.2.10
 /// ```
+#[derive(Debug, PartialEq)]
 pub struct Origin {
     user_name: String,
     session_version: String,
@@ -51,8 +52,39 @@ pub struct Origin {
     network_address: IpAddr,
 }
 
-impl PayloadParser<Origin> for Origin {
-    fn parse(data: &[u8]) -> Result<Origin, ParsingError> {
+impl Origin {
+    
+    pub fn new(user_name: String, session_version: String, session_id: String, address_type: AddressType, network_address: IpAddr) -> Self {
+        Self { user_name, session_version, session_id, network_type: NetworkType::Internet, address_type, network_address }
+    }
+    
+    pub fn user_name(&self) -> &str {
+        &self.user_name
+    }
+
+    pub fn session_version(&self) -> &str {
+        &self.session_version
+    }
+
+    pub fn session_id(&self) -> &str {
+        &self.session_id
+    }
+
+    pub fn network_type(&self) -> &NetworkType {
+        &self.network_type
+    }
+
+    pub fn address_type(&self) -> &AddressType {
+        &self.address_type
+    }
+
+    pub fn network_address(&self) -> IpAddr {
+        self.network_address
+    }
+}
+
+impl PayloadParser for Origin {
+    fn parse(data: &[u8]) -> Result<Self, ParsingError> {
         let (user_name, other) = data
             .separate_trimmed(TRIM, TRIM_REF)
             .ok_or_else(|| ParsingError::from_bytes(data))?;

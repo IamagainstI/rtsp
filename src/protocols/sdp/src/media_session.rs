@@ -103,8 +103,8 @@ impl Default for MediaSession {
     }
 }
 
-impl PayloadParser<MediaSession> for MediaSession {
-    fn parse(data: &[u8]) -> Result<MediaSession, ParsingError> {
+impl PayloadParser for MediaSession {
+    fn parse(data: &[u8]) -> Result<Self, ParsingError> {
         let mut session = MediaSession::default();
         let mut slice = data;
         let mut is_session_info_filling = true;
@@ -245,7 +245,7 @@ fn get_uri(data: &[u8]) -> Result<Uri, ParsingError> {
 }
 
 fn get_connection_address(data: &[u8]) -> Result<IpAddr, ParsingError> {
-    if let Some((_, mut next)) = data.separate_trimmed(TRIM, TRIM_REF) {
+    if let Some((_, next)) = data.separate_trimmed(TRIM, TRIM_REF) {
         if let Some((_type, address)) = next.separate_trimmed(TRIM, TRIM_REF) {
             let addr_type = AddressType::from_bytes(_type)
                 .ok_or( ParsingError::from_bytes(data))?;

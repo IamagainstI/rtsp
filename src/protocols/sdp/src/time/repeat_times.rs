@@ -39,23 +39,22 @@ pub struct RepeatTimes {
     offset2: Duration,
 }
 
-impl PayloadParser<RepeatTimes> for RepeatTimes {
-    fn parse(data: &[u8]) -> Result<RepeatTimes, ParsingError> {
+impl PayloadParser for RepeatTimes {
+    fn parse(data: &[u8]) -> Result<Self, ParsingError> {
         if let Some((interval, other)) = data.separate_trimmed(TRIM, TRIM_REF) {
             if let Some((duration, other)) = other.separate_trimmed(TRIM, TRIM_REF) {
-                if let Some((offset1, other)) = other.separate_trimmed(TRIM, TRIM_REF) {
-                    if let Some((offset2, _)) = other.separate_trimmed(TRIM, TRIM_REF) {
-                        let repeat_interval = parse_duration(interval)?;
-                        let active_duration = parse_duration(duration)?;
-                        let offset1_res = parse_duration(offset1)?;
-                        let offset2_res = parse_duration(offset2)?;
-                        return Ok(RepeatTimes::new(repeat_interval, active_duration, offset1_res, offset2_res));
-                    }
+                if let Some((offset1, offset2)) = other.separate_trimmed(TRIM, TRIM_REF) {
+                    let repeat_interval = parse_duration(interval)?;
+                    let active_duration = parse_duration(duration)?;
+                    let offset1 = parse_duration(offset1)?;
+                    let offset2 = parse_duration(offset2)?;
+                    return Ok(RepeatTimes::new(repeat_interval, active_duration, offset1, offset2));
                 }
             }
         }
         Err(ParsingError::from_bytes(data))
     }
+    
 }
 
 impl RepeatTimes {
@@ -89,22 +88,23 @@ impl RepeatTimes {
 }
 
 fn parse_duration(data: &[u8]) -> Result<Duration, ParsingError> {
-    let last = data.last()
-        .ok_or(ParsingError::from_bytes(data))?;
-    let is_init_spec = is_unit_spec(*last);
-    if !is_init_spec {
+    let Some((unit, value)) = data.split_last() 
+    else { 
+        return Err(ParsingError::invalid_data("Data is empty.")) 
+    };
+    let has_unit_specifier = is_unit_spec(*unit);
+    if !has_unit_specifier {
         let value: i64 = data.utf8_to_number::<i64>()
             .map_err(|e| ParsingError::Utf8Error(e))?;
         return Ok(Duration::seconds(value));
     }
-    let (value, unit) = data.split_at(2);
     let value: i64 = value.utf8_to_number::<i64>()
         .map_err(|e| ParsingError::Utf8Error(e))?;
     match unit {
-        b"d" => Ok(Duration::days(value)),
-        b"h" => Ok(Duration::hours(value)),
-        b"m" => Ok(Duration::minutes(value)),
-        b"s" => Ok(Duration::seconds(value)),
+        b'd' => Ok(Duration::days(value)),
+        b'h' => Ok(Duration::hours(value)),
+        b'm' => Ok(Duration::minutes(value)),
+        b's' => Ok(Duration::seconds(value)),
         _ => Err(ParsingError::from_bytes(data)),
     }
 }

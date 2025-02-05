@@ -1,3 +1,29 @@
+/// Represents the payload type in SDP.
+/// 
+/// The `PayloadType` enum corresponds to the `m=` field in SDP, which specifies
+/// the media type for a media description.
+/// 
+/// According to RFC 4566, the `m=` field can have the following values:
+/// 
+/// - `video`: Video media type.
+/// - `audio`: Audio media type.
+/// - `application`: Application media type.
+/// - `data`: Data media type.
+/// - `control`: Control media type.
+/// 
+/// Example:
+/// 
+/// ```text
+/// m=video 49170 RTP/AVP 31
+/// ```
+/// 
+/// # Variants
+/// 
+/// * `Video` - Video media type.
+/// * `Audio` - Audio media type.
+/// * `Application` - Application media type.
+/// * `Data` - Data media type.
+/// * `Control` - Control media type.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PayloadType {
     Video,

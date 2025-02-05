@@ -1,8 +1,8 @@
-use std::{io::Error, str};
-
 use hex::encode;
 use crate::extensions::array_extensions::ArrayExt;
+use crate::extensions::utf8_array_extensions::U8ArrayExt;
 use crate::media::codec::Codec;
+use crate::parsing::ParsingError;
 
 const SIZE_LENGTH_START_STRING: &[u8] = "sizeLength=".as_bytes();
 const INDEX_LENGTH_START_STRING: &[u8] = "indexLength=".as_bytes();
@@ -23,8 +23,8 @@ pub struct AacCodec {
     config_bytes: Option<Vec<u8>>,
 }
 
-///Must add config_parameter parsing!!!
 impl Codec for AacCodec {
+
     fn samples_frequency(&self) -> i32 {
         self.samples_frequency
     }
@@ -33,10 +33,9 @@ impl Codec for AacCodec {
         self.format
     }
 
-    fn parse_fmtp(&mut self, fmtp: &[u8]) -> Result<(), std::io::Error> {
+    fn from_fmtp(fmtp: &[u8]) -> Result<Self, ParsingError> {
         let mut current_span: &[u8] = fmtp;
 
-        //not parsed now
         let mut config_parameter: &[u8] = DEFAULT;
         let mut size_length_parameter: &[u8] = DEFAULT;
         let mut index_length_parameter: &[u8] = DEFAULT;
@@ -61,38 +60,30 @@ impl Codec for AacCodec {
            index_delta_length_parameter != DEFAULT && !index_delta_length_parameter.is_empty() &&
            index_length_parameter != DEFAULT && !index_length_parameter.is_empty() {
             
-            self.size_length = str::from_utf8(size_length_parameter)
-                .map_err(|err| std::io::Error::new(std::io::ErrorKind::InvalidData, err))
-                .and_then(|res| res.parse::<i32>().map_err(|err| std::io::Error::new(std::io::ErrorKind::InvalidData, err)))?;
-            self.index_length = str::from_utf8(index_length_parameter)
-                .map_err(|err| std::io::Error::new(std::io::ErrorKind::InvalidData, err))
-                .and_then(|res| res.parse::<i32>().map_err(|err| std::io::Error::new(std::io::ErrorKind::InvalidData, err)))?;
-            self.index_delta_length = str::from_utf8(index_delta_length_parameter)
-                .map_err(|err| std::io::Error::new(std::io::ErrorKind::InvalidData, err))
-                .and_then(|res| res.parse::<i32>().map_err(|err| std::io::Error::new(std::io::ErrorKind::InvalidData, err)))?;
+            let size_length = size_length_parameter.utf8_to_number::<i32>()?;
+            let index_length = index_length_parameter.utf8_to_number::<i32>()?;
+            let index_delta_length = index_delta_length_parameter.utf8_to_number::<i32>()?;
 
             if config_parameter != DEFAULT && !config_parameter.is_empty() {
-                self.config_bytes = Some(config_parameter
+                let config_bytes = Some(config_parameter
                     .chunks(2)
                     .map(|chunk| {
                         let hex = encode(chunk);
                         u8::from_str_radix(&hex, 16).unwrap()
                     })
                     .collect::<Vec<u8>>());
-                return Ok(());
+
+                return Ok(AacCodec {
+                    size_length,
+                    index_length,
+                    index_delta_length,
+                    samples_frequency: 0,
+                    format: 0,
+                    config_bytes,
+                });
             }
         }
-        return  Result::Err(Error::new(std::io::ErrorKind::Other, "error"));
+        return  Err(ParsingError::from_bytes(fmtp));
     }
     
-    fn new() -> Self {
-        AacCodec {
-            size_length: 0,
-            index_length: 0,
-            index_delta_length: 0,
-            samples_frequency: 0,
-            format: 0,
-            config_bytes: None,
-        }
-    }
 }

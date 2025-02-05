@@ -2,17 +2,39 @@ use encoding_rs::Encoding;
 use num::{CheckedAdd, CheckedDiv, CheckedMul, Num, NumCast};
 use num::traits::CheckedNeg;
 
-
 use super::CastError;
 
 type Result<'a, T> = std::result::Result<T, CastError>;
 
 const STEP: i32 = 10;
 
+/// A trait that provides additional methods for byte slices (`[u8]`).
 pub trait U8ArrayExt {
+    /// Checks if the byte slice is valid UTF-8.
+    ///
+    /// # Returns
+    ///
+    /// `true` if the byte slice is valid UTF-8, `false` otherwise.
     fn is_utf8(&self) -> bool;
+
+    /// Converts the byte slice to a number.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `T` - The type of the number to convert to. Must implement `Num`, `CheckedAdd`, `CheckedMul`, `CheckedNeg`, `CheckedDiv`, and `NumCast`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the converted number if successful, or a `CastError` if the conversion fails.
     fn utf8_to_number<T>(&self) -> Result<T>
-        where T: Num + CheckedAdd + CheckedMul + CheckedNeg + CheckedDiv + NumCast;
+    where
+        T: Num + CheckedAdd + CheckedMul + CheckedNeg + CheckedDiv + NumCast;
+
+    /// Converts the byte slice to a string slice (`&str`).
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the string slice if successful, or a `CastError` if the conversion fails.
     fn utf8_to_str(&self) -> Result<&str>;
 }
 
