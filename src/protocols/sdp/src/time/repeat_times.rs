@@ -1,12 +1,10 @@
 use abstractions::{
-    extensions::{
-        array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt
-    }, 
-    parsing::{payload_parser::PayloadParser, ParsingError}
+    extensions::{array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt},
+    parsing::{parsing_error::ParsingError, payload_parser::PayloadParser},
 };
 use chrono::Duration;
 
-use crate::{TRIM, TRIM_REF};
+use crate::TRIM;
 
 /// Represents the repeat times field in an SDP message.
 ///
@@ -41,20 +39,25 @@ pub struct RepeatTimes {
 
 impl PayloadParser for RepeatTimes {
     fn parse(data: &[u8]) -> Result<Self, ParsingError> {
-        if let Some((interval, other)) = data.separate_trimmed(TRIM, TRIM_REF) {
-            if let Some((duration, other)) = other.separate_trimmed(TRIM, TRIM_REF) {
-                if let Some((offset1, offset2)) = other.separate_trimmed(TRIM, TRIM_REF) {
-                    let repeat_interval = parse_duration(interval)?;
-                    let active_duration = parse_duration(duration)?;
-                    let offset1 = parse_duration(offset1)?;
-                    let offset2 = parse_duration(offset2)?;
-                    return Ok(RepeatTimes::new(repeat_interval, active_duration, offset1, offset2));
-                }
-            }
-        }
-        Err(ParsingError::from_bytes(data))
+        let (interval, other) = data
+            .separate_trimmed(TRIM, TRIM)
+            .ok_or_else(|| ParsingError::from_bytes(data))?;
+
+        let (duration, other) = other
+            .separate_trimmed(TRIM, TRIM)
+            .ok_or_else(|| ParsingError::from_bytes(data))?;
+
+        let (offset1, offset2) = other
+            .separate_trimmed(TRIM, TRIM)
+            .ok_or_else(|| ParsingError::from_bytes(data))?;
+
+        Ok(RepeatTimes::new(
+            parse_duration(interval)?,
+            parse_duration(duration)?,
+            parse_duration(offset1)?,
+            parse_duration(offset2)?,
+        ))
     }
-    
 }
 
 impl RepeatTimes {
@@ -66,10 +69,20 @@ impl RepeatTimes {
     /// * `active_duration` - The duration for which the session is active.
     /// * `offset1` - The first offset from the start time at which the session is active.
     /// * `offset2` - The second offset from the start time at which the session is active.
-    pub fn new(repeat_interval: Duration, active_duration: Duration, offset1: Duration, offset2: Duration) -> Self {
-        Self { repeat_interval, active_duration, offset1, offset2 }
+    pub fn new(
+        repeat_interval: Duration,
+        active_duration: Duration,
+        offset1: Duration,
+        offset2: Duration,
+    ) -> Self {
+        Self {
+            repeat_interval,
+            active_duration,
+            offset1,
+            offset2,
+        }
     }
-    
+
     pub fn repeat_interval(&self) -> Duration {
         self.repeat_interval
     }
@@ -88,17 +101,18 @@ impl RepeatTimes {
 }
 
 fn parse_duration(data: &[u8]) -> Result<Duration, ParsingError> {
-    let Some((unit, value)) = data.split_last() 
-    else { 
-        return Err(ParsingError::invalid_data("Data is empty.")) 
+    let Some((unit, value)) = data.split_last() else {
+        return Err(ParsingError::from_str("Data is empty."));
     };
     let has_unit_specifier = is_unit_spec(*unit);
     if !has_unit_specifier {
-        let value: i64 = data.utf8_to_number::<i64>()
+        let value: i64 = data
+            .utf8_to_number::<i64>()
             .map_err(|e| ParsingError::Utf8Error(e))?;
         return Ok(Duration::seconds(value));
     }
-    let value: i64 = value.utf8_to_number::<i64>()
+    let value: i64 = value
+        .utf8_to_number::<i64>()
         .map_err(|e| ParsingError::Utf8Error(e))?;
     match unit {
         b'd' => Ok(Duration::days(value)),

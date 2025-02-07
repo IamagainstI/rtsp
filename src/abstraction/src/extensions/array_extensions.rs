@@ -4,66 +4,82 @@ pub trait ArrayExt<T: PartialEq> {
     ///
     /// # Arguments
     ///
-    /// * `elem` - The element to separate the slice at.
+    /// * `elems` - The elements to separate the slice at.
     ///
     /// # Returns
     ///
     /// An `Option` containing a tuple of two slices. The first slice contains the elements
     /// before the specified element, and the second slice contains the elements after the
     /// specified element. If the element is not found, `None` is returned.
-    fn separate(&self, elem: T) -> Option<(&[T], &[T])>;
+    fn separate<'a>(&'a self, elems: &'a [T]) -> Option<(&'a [T], &'a [T])>;
+
 
     /// Separates the slice into two parts at the first occurrence of the specified element,
     /// and trims the specified element from both resulting slices.
     ///
     /// # Arguments
     ///
-    /// * `elem` - The element to separate the slice at.
-    /// * `trim` - The element to trim from both resulting slices.
+    /// * `elems` - The elements to separate the slice at.
+    /// * `trim` - The elements to trim from both resulting slices.
     ///
     /// # Returns
     ///
     /// An `Option` containing a tuple of two trimmed slices. The first slice contains the
     /// elements before the specified element, and the second slice contains the elements
     /// after the specified element. If the element is not found, `None` is returned.
-    fn separate_trimmed(&self, elem: T, trim: &T) -> Option<(&[T], &[T])>;
+    fn separate_trimmed<'a>(&'a self, elems: &'a [T], trim: &'a [T]) -> Option<(&'a [T], &'a [T])>;
 
     /// Trims the specified element from both ends of the slice.
     ///
     /// # Arguments
     ///
-    /// * `trim` - The element to trim from both ends of the slice.
+    /// * `trim` - The elements to trim from both ends of the slice.
     ///
     /// # Returns
     ///
     /// A slice with the specified element trimmed from both ends.
-    fn trim(&self, trim: &T) -> &[T];
+    fn trim(&self, trim: &[T]) -> &[T];
 }
 
 impl<T: PartialEq> ArrayExt<T> for [T] {
-    fn separate(&self, elem: T) -> Option<(&[T], &[T])> {
-        match self.iter().position(|x| *x == elem) {
-            Some(pos) => Some((&self[0..pos], &self[(pos + 1)..])),
-            None => None,
+    fn separate<'a>(&'a self, elems: &'a [T]) -> Option<(&'a [T], &'a [T])> {
+        separate_internal(&self, elems)
+    }
+
+    fn separate_trimmed<'a>(&'a self, elems: &'a [T], trim: &'a [T]) -> Option<(&'a [T], &'a [T])> {
+        separate_internal(&self, elems).map(|(left, right)| (left.trim(trim), right.trim(trim)))
+    }
+
+    fn trim(&self, trim: &[T]) -> &[T] {
+        let mut start = 0;
+        let mut end = self.len() - 1;
+        while start <= end && trim.contains(&self[start]) {
+            start += 1;
         }
-    }
-
-    fn separate_trimmed(&self, elem: T, trim: &T) -> Option<(&[T], &[T])> {
-        match self.separate(elem) {
-            Some((first, second)) => Some((first.trim(trim), second.trim(trim))),
-            None => None,
+        while end > 0 && trim.contains(&self[end]) {
+            end -= 1;
         }
+        if start > end {
+            return &[];
+        }
+        &self[start..end + 1]
     }
+}
 
-    fn trim(&self, trim: &T) -> &[T] {
-        let start = self.iter()
-            .position(|x| x != trim)
-            .unwrap_or(0);
-
-        let end = self.iter()
-            .rposition(|x| x != trim)
-            .map_or(0, |pos| pos + 1);
-
-        &self[start..end]
+fn separate_internal<'a, T: PartialEq>(slice: &'a [T], elems: &[T]) -> Option<(&'a [T], &'a [T])> {
+    let slice_len = slice.len();
+    let elems_len = elems.len();
+    if slice_len <= elems_len {
+        return None;
     }
+    let window = elems_len;
+    let mut current: usize = 0;
+    while current + window <= slice_len {
+        if slice[current..current + window] == *elems {
+            let test = (&slice[..current], &slice[current + window..]);
+            return Some((&slice[..current], &slice[current + window..]));
+        }
+        current += 1;
+    }
+    None
 }

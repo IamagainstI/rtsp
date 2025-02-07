@@ -2,7 +2,8 @@ use encoding_rs::Encoding;
 use num::{CheckedAdd, CheckedDiv, CheckedMul, Num, NumCast};
 use num::traits::CheckedNeg;
 
-use super::CastError;
+use super::cast_error::CastError;
+
 
 type Result<'a, T> = std::result::Result<T, CastError>;
 

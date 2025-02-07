@@ -1,3 +1,6 @@
+use abstractions::parsing::parsing_error::ParsingError;
+
+
 /// Represents the payload type in SDP.
 /// 
 /// The `PayloadType` enum corresponds to the `m=` field in SDP, which specifies
@@ -44,25 +47,25 @@ impl PayloadType {
         }
     }
 
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn from_str(s: &str) -> Result<Self, ParsingError> {
         match s {
-            "video" => Some(PayloadType::Video),
-            "audio" => Some(PayloadType::Audio),
-            "application" => Some(PayloadType::Application),
-            "data" => Some(PayloadType::Data),
-            "control" => Some(PayloadType::Control),
-            _ => None,
+            "video" => Ok(PayloadType::Video),
+            "audio" => Ok(PayloadType::Audio),
+            "application" => Ok(PayloadType::Application),
+            "data" => Ok(PayloadType::Data),
+            "control" => Ok(PayloadType::Control),
+            _ => Err(ParsingError::from_str(s)),
         }
     }
     
-    pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, ParsingError> {
         match bytes {
-            b"video" => Some(PayloadType::Video),
-            b"audio" => Some(PayloadType::Audio),
-            b"application" => Some(PayloadType::Application),
-            b"data" => Some(PayloadType::Data),
-            b"control" => Some(PayloadType::Control),
-            _ => None,
+            b"video" => Ok(PayloadType::Video),
+            b"audio" => Ok(PayloadType::Audio),
+            b"application" => Ok(PayloadType::Application),
+            b"data" => Ok(PayloadType::Data),
+            b"control" => Ok(PayloadType::Control),
+            _ => Err(ParsingError::from_bytes(bytes)),
         }
     }
 }

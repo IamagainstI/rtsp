@@ -2,16 +2,19 @@ use abstractions::{
     extensions::{
         array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt
     }, 
-    parsing::{payload_parser::PayloadParser, ParsingError}
+    parsing::{parsing_error::ParsingError, payload_parser::PayloadParser}
 };
 use chrono::{
     DateTime, Duration, TimeZone, Utc
 };
 
-use crate::{
-    TRIM, TRIM_REF
-};
+use crate::TRIM;
 
+///The first and second sub-fields give the start and stop times,
+///respectively, for the session.  These values are the decimal
+///representation of Network Time Protocol (NTP) time values in seconds
+///since 1900.  To convert these values to UNIX time, subtract
+///decimal 2208988800.
 const SUBTRAHEND: i64 = 2208988800;
 
 
@@ -40,7 +43,7 @@ impl Default for Timing {
 
 impl PayloadParser for Timing {
     fn parse(data: &[u8]) -> Result<Self, ParsingError> {
-        if let Some((start, stop)) = data.separate_trimmed(TRIM, TRIM_REF) {
+        if let Some((start, stop)) = data.separate_trimmed(TRIM, TRIM) {
             let start_time = start.utf8_to_number::<i64>()?;
             let stop_time = stop.utf8_to_number::<i64>()?;
 

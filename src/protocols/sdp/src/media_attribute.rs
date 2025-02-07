@@ -1,34 +1,18 @@
-pub trait PropertyMediaAttribute {
-    fn name(&self) -> &str;
+pub struct UnknownMediaAttribute {
+    name: String,
+    value: Option<String>,
 }
 
-pub trait ValueMediaAttribute : PropertyMediaAttribute {
-    fn value(&self) -> &str;
-}
-
-pub struct UnknownPropertyAttribute<'a> {
-    name: &'a str,
-}
-
-pub struct UnknownValueAttribute<'a> {
-    name: &'a str,
-    value: &'a str,
-}
-
-impl<'a> PropertyMediaAttribute for UnknownValueAttribute<'a> {
-    fn name(&self) -> &str {
-        self.name
+impl UnknownMediaAttribute {
+    /// Creates a new [`UnknownMediaAttribute`].
+    pub fn new(name: String, value: Option<String>) -> Self {
+        Self { name, value }
     }
-}
-
-impl<'a> ValueMediaAttribute for UnknownValueAttribute<'a> {
-    fn value(&self) -> &str {
-        self.value
+    
+    fn name(&self) -> &String {
+        &self.name
     }
-}
-
-impl<'a> PropertyMediaAttribute for UnknownPropertyAttribute<'a> {
-    fn name(&self) -> &str {
-        self.name
+    fn value(&self) -> &Option<String> {
+        &self.value
     }
 }

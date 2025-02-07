@@ -2,10 +2,10 @@ use abstractions::{
     extensions::{
         array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt
     }, 
-    parsing::{payload_parser::PayloadParser, ParsingError}
+    parsing::{parsing_error::ParsingError, payload_parser::PayloadParser}
 };
 
-use crate::{COLON_SEPARATOR, TRIM, TRIM_REF};
+use crate::{COLON_SEPARATOR, TRIM};
 
 
 /// Represents the bandwidth information for a session or media description.
@@ -40,7 +40,7 @@ pub struct Bandwidth {
 
 impl PayloadParser for Bandwidth {
     fn parse(data: &[u8]) -> Result<Self, ParsingError> {
-        if let Some((first, second)) = data.separate_trimmed(COLON_SEPARATOR, TRIM_REF) {
+        if let Some((first, second)) = data.separate_trimmed(COLON_SEPARATOR, TRIM) {
             let index = first.utf8_to_str()?.to_string();
             let element = second.utf8_to_number::<u32>()?;
             return Ok(Self::new(index, element));

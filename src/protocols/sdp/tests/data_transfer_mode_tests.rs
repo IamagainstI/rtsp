@@ -8,7 +8,7 @@ use sdp::data_transfer_mode::DataTransferMode;
 #[case(0b11, Some(DataTransferMode::SendReceive))]
 #[case(0b100, None)]
 fn test_from_bits(#[case] bits: u8, #[case] expected: Option<DataTransferMode>) {
-    let result = DataTransferMode::from_bits(bits);
+    let result = DataTransferMode::from_bit(bits);
     assert_eq!(result, expected);
 }
 

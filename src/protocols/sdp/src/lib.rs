@@ -8,9 +8,10 @@ pub mod payload_type;
 pub mod network_type;
 pub mod address_type;
 pub mod time;
+mod sdp_port;
+mod transport_protocol;
 
-const RAW_SEPARATOR: u8 = '\n' as u8;
-const KEY_VALUE_SEPARATOR: u8 = '=' as u8;
-const COLON_SEPARATOR: u8 = ':' as u8;
-const TRIM: u8 = ' ' as u8;
-const TRIM_REF: &u8 = &TRIM;
+const RAW_SEPARATOR: &[u8] = b"\n";
+const KEY_VALUE_SEPARATOR: &[u8] = b"=";
+const COLON_SEPARATOR: &[u8] = b":";
+const TRIM: &[u8] = b" ";

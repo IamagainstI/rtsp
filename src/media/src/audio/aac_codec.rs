@@ -1,15 +1,15 @@
+use abstractions::parsing::parsing_error::ParsingError;
 use hex::encode;
-use crate::extensions::array_extensions::ArrayExt;
-use crate::extensions::utf8_array_extensions::U8ArrayExt;
-use crate::media::codec::Codec;
-use crate::parsing::ParsingError;
+use abstractions::extensions::array_extensions::ArrayExt;
+use abstractions::extensions::utf8_array_extensions::U8ArrayExt;
+use crate::codec::Codec;
 
 const SIZE_LENGTH_START_STRING: &[u8] = "sizeLength=".as_bytes();
 const INDEX_LENGTH_START_STRING: &[u8] = "indexLength=".as_bytes();
 const INDEX_DELTA_LENGTH_START_STRING: &[u8] = "indexDeltaLength=".as_bytes();
 const CONFIG_START_STRING: &[u8] = "config=".as_bytes();
 const DEFAULT: &[u8] = b"";
-const SEPARATOR: u8 = b';';
+const SEPARATOR: &[u8] = b";";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AacCodec {
@@ -33,7 +33,7 @@ impl Codec for AacCodec {
         self.format
     }
 
-    fn from_fmtp(fmtp: &[u8]) -> Result<Self, ParsingError> {
+    fn parse_fmtp(&self, fmtp: &[u8]) -> Result<(), ParsingError> {
         let mut current_span: &[u8] = fmtp;
 
         let mut config_parameter: &[u8] = DEFAULT;
@@ -73,14 +73,7 @@ impl Codec for AacCodec {
                     })
                     .collect::<Vec<u8>>());
 
-                return Ok(AacCodec {
-                    size_length,
-                    index_length,
-                    index_delta_length,
-                    samples_frequency: 0,
-                    format: 0,
-                    config_bytes,
-                });
+                return Ok(());
             }
         }
         return  Err(ParsingError::from_bytes(fmtp));

@@ -9,5 +9,6 @@ byteorder = { workspace = true }
 chrono = { workspace = true }
 encoding_rs = { workspace = true }
 http = { workspace = true }
+media = { version = "0.1.0", path = "../../media" }
 rstest = { workspace = true }
 timespan = { workspace = true }

@@ -1,5 +1,8 @@
-use crate::{media::codec::Codec, parsing::ParsingError};
+use abstractions::parsing::parsing_error::ParsingError;
 
+use crate::codec::Codec;
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct H265Codec {
     size_length: i32,
     index_length: i32,
@@ -18,8 +21,8 @@ impl Codec for H265Codec {
     fn format(&self) -> i32 {
         todo!()
     }
-
-    fn from_fmtp(fmtp: &[u8]) -> Result<Self, ParsingError> {
+    
+    fn parse_fmtp(&self, fmtp: &[u8]) -> Result<(), ParsingError> {
         todo!()
     }
 }
