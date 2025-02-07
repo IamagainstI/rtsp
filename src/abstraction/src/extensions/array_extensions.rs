@@ -76,7 +76,6 @@ fn separate_internal<'a, T: PartialEq>(slice: &'a [T], elems: &[T]) -> Option<(&
     let mut current: usize = 0;
     while current + window <= slice_len {
         if slice[current..current + window] == *elems {
-            let test = (&slice[..current], &slice[current + window..]);
             return Some((&slice[..current], &slice[current + window..]));
         }
         current += 1;
