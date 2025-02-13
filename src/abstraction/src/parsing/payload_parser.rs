@@ -17,6 +17,7 @@ use super::parsing_error::ParsingError;
 /// use abstractions::parsing::payload_parser::PayloadParser;
 /// use abstractions::parsing::parsing_error::ParsingError;
 ///
+/// #[derive(Debug)]
 /// struct MyPayload {
 ///     // Fields for MyPayload
 /// }

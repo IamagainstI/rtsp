@@ -13,7 +13,6 @@ pub trait ArrayExt<T: PartialEq> {
     /// specified element. If the element is not found, `None` is returned.
     fn separate<'a>(&'a self, elems: &'a [T]) -> Option<(&'a [T], &'a [T])>;
 
-
     /// Separates the slice into two parts at the first occurrence of the specified element,
     /// and trims the specified element from both resulting slices.
     ///
@@ -28,6 +27,37 @@ pub trait ArrayExt<T: PartialEq> {
     /// elements before the specified element, and the second slice contains the elements
     /// after the specified element. If the element is not found, `None` is returned.
     fn separate_trimmed<'a>(&'a self, elems: &'a [T], trim: &'a [T]) -> Option<(&'a [T], &'a [T])>;
+
+    /// Separates the slice into two parts at the first occurrence of the specified element.
+    /// If separate is not success that return`self` at the left of result
+    ///
+    /// # Arguments
+    ///
+    /// * `elems` - The elements to separate the slice at.
+    ///
+    /// # Returns
+    ///
+    /// An `Option` containing a tuple of two slices. The first slice contains the elements
+    /// before the specified element, and the second slice contains the elements after the
+    /// specified element. If the element is not found, `None` is returned.
+    fn while_separate<'a>(&'a self, elems: &'a [T]) -> Option<(&'a [T], &'a [T])>;
+
+    
+    /// Separates the slice into two parts at the first occurrence of the specified element,
+    /// and trims the specified element from both resulting slices. If separate is not success 
+    /// that return`self` at the left of result
+    ///
+    /// # Arguments
+    ///
+    /// * `elems` - The elements to separate the slice at.
+    /// * `trim` - The elements to trim from both resulting slices.
+    ///
+    /// # Returns
+    ///
+    /// An `Option` containing a tuple of two trimmed slices. The first slice contains the
+    /// elements before the specified element, and the second slice contains the elements
+    /// after the specified element. If the element is not found, `None` is returned.
+    fn while_separate_trimmed<'a>(&'a self, elems: &'a [T], trim: &'a [T]) -> Option<(&'a [T], &'a [T])>;
 
     /// Trims the specified element from both ends of the slice.
     ///
@@ -50,7 +80,18 @@ impl<T: PartialEq> ArrayExt<T> for [T] {
         separate_internal(&self, elems).map(|(left, right)| (left.trim(trim), right.trim(trim)))
     }
 
+    fn while_separate<'a>(&'a self, elems: &'a [T]) -> Option<(&'a [T], &'a [T])> {
+        while_separate_internal(&self, elems)
+    }
+    
+    fn while_separate_trimmed<'a>(&'a self, elems: &'a [T], trim: &'a [T]) -> Option<(&'a [T], &'a [T])> {
+        while_separate_internal(&self, elems).map(|(left, right)| (left.trim(trim), right.trim(trim)))
+    }
+
     fn trim(&self, trim: &[T]) -> &[T] {
+        if self.is_empty() {
+            return self;
+        }
         let mut start = 0;
         let mut end = self.len() - 1;
         while start <= end && trim.contains(&self[start]) {
@@ -81,4 +122,16 @@ fn separate_internal<'a, T: PartialEq>(slice: &'a [T], elems: &[T]) -> Option<(&
         current += 1;
     }
     None
+}
+
+fn while_separate_internal<'a, T: PartialEq>(slice: &'a [T], elems: &[T]) -> Option<(&'a [T], &'a [T])> {
+    match separate_internal(slice, elems) {
+        Some(res) => return Some(res),
+        None => {
+            if slice.is_empty() {
+                return None;
+            }
+            return Some((slice, &[]));
+        },
+    }
 }

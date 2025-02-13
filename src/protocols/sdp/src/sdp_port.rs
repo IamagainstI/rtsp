@@ -1,3 +1,4 @@
+#[derive(Debug, PartialEq)]
 pub struct SdpPort {
     rtp_port: u16,
     rtcp_port: u16,
@@ -9,10 +10,10 @@ impl SdpPort {
         Self { rtp_port, rtcp_port }
     }
     
-    fn rtp_port(&self) -> u16 {
+    pub fn rtp_port(&self) -> u16 {
         self.rtp_port
     }
-    fn rtcp_port(&self) -> u16 {
+    pub fn rtcp_port(&self) -> u16 {
         self.rtcp_port
     }
 }

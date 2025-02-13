@@ -1,5 +1,6 @@
 use abstractions::{extensions::utf8_array_extensions::U8ArrayExt, parsing::parsing_error::ParsingError};
 
+#[derive(Debug, PartialEq)]
 pub enum MediaTransportProtocol {
     RtpAvp,
     RtpSavp,

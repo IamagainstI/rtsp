@@ -29,6 +29,7 @@ fn test_utf8_to_integer(#[case] input: &[u8], #[case] expected: Result<i32, ()>)
 #[case(vec![0, 0, 1, 2, 3, 0, 4, 5, 0, 0], vec![0], vec![1, 2, 3, 0, 4, 5])]
 #[case(vec![1, 2, 3], vec![0], vec![1, 2, 3])]
 #[case(vec![0, 0, 0], vec![0], vec![])]
+#[case(vec![], vec![0], vec![])]
 fn test_trim(#[case] input: Vec<i32>, #[case] trim_value: Vec<i32>, #[case] expected: Vec<i32>) {
     assert_eq!(input.trim(&trim_value), expected.as_slice());
 }
@@ -52,4 +53,26 @@ fn test_separate(#[case] input: Vec<i32>, #[case] separators: Vec<i32>, #[case] 
 #[case(vec![0, 1, 2, 3, 0, 4, 5, 0], vec![2, 4], vec![0], None)]
 fn test_separate_trimmed(#[case] input: Vec<i32>, #[case] separators: Vec<i32>, #[case] trim_value: Vec<i32>, #[case] expected: Option<(&[i32], &[i32])>) {
     assert_eq!(input.separate_trimmed(&separators, &trim_value), expected);
+}
+
+#[rstest]
+#[case(&[1, 2, 3, 4, 5], &[3], Some((&[1, 2][..], &[4, 5][..])))]
+#[case(&[1, 2, 3, 4, 5], &[6], Some((&[1, 2, 3, 4, 5][..], &[][..])))]
+#[case(&[1, 2, 3, 4, 5], &[1], Some((&[][..], &[2, 3, 4, 5][..])))]
+#[case(&[1, 2, 3, 4, 5], &[5], Some((&[1, 2, 3, 4][..], &[][..])))]
+#[case(&[1, 2, 3, 4, 5], &[0], Some((&[1, 2, 3, 4, 5][..], &[][..])))]
+fn test_while_separate(#[case] slice: &[i32], #[case] elems: &[i32], #[case] expected: Option<(&[i32], &[i32])>) {
+    let result = slice.while_separate(elems);
+    assert_eq!(result, expected);
+}
+
+#[rstest]
+#[case(&[1, 2, 3, 4, 5], &[3], &[1, 5], Some((&[2][..], &[4][..])))]
+#[case(&[1, 2, 3, 4, 5], &[6], &[1, 5], Some((&[2, 3, 4][..], &[][..])))]
+#[case(&[1, 2, 3, 4, 5], &[1], &[1, 5], Some((&[][..], &[2, 3, 4][..])))]
+#[case(&[1, 2, 3, 4, 5], &[5], &[1, 5], Some((&[2, 3, 4][..], &[][..])))]
+#[case(&[1, 2, 3, 4, 5], &[0], &[1, 5], Some((&[2, 3, 4][..], &[][..])))]
+fn test_while_separate_trimmed(#[case] slice: &[i32], #[case] elems: &[i32], #[case] trim: &[i32], #[case] expected: Option<(&[i32], &[i32])>) {
+    let result = slice.while_separate_trimmed(elems, trim);
+    assert_eq!(result, expected);
 }

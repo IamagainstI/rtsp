@@ -1,16 +1,18 @@
+use std::net::IpAddr;
+
 use abstractions::{
     extensions::{array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt},
-    parsing::{parsing_error::ParsingError, payload_parser::PayloadParser},
+    parsing::{
+        parsing_error::ParsingError, payload_parser::PayloadParser, NEW_LINE, SLASH, TRIM_NEW_LINE, WHITESPACE
+    },
 };
-use media::codec_type::CodecType;
+use media::{codec::RTPMAP_KEY, codec_type::CodecType};
 
 use crate::{
-    bandwidth::Bandwidth, data_transfer_mode::DataTransferMode, payload_type::PayloadType,
-    sdp_port::SdpPort, transport_protocol::MediaTransportProtocol, RAW_SEPARATOR, TRIM,
+    bandwidth::Bandwidth, data_transfer_mode::DataTransferMode, media_session::get_connection_address, payload_type::PayloadType, sdp_port::SdpPort, transport_protocol::MediaTransportProtocol
 };
 
-const RTPMAP: &[u8] = b"a=rtpmap:";
-const PORT_SEPARATOR: &[u8] = b"/";
+const CONNECTION_KEY: &[u8] = b"c=";
 
 /// Represents a media description in SDP.
 ///
@@ -42,6 +44,7 @@ const PORT_SEPARATOR: &[u8] = b"/";
 /// * `payload_type` - The payload type for the media description.
 /// * `ports` - A list of ports used for the media description.
 /// * `transport_protocol` - The transport protocol used for the media description.
+#[derive(Debug, PartialEq)]
 pub struct MediaDescription {
     bandwidth: Option<Bandwidth>,
     codecs: Vec<CodecType>,
@@ -50,9 +53,32 @@ pub struct MediaDescription {
     ports: Vec<SdpPort>,
     port_count: usize,
     transport_protocol: MediaTransportProtocol,
+    connection_address: Option<IpAddr>,
 }
 
 impl MediaDescription {
+    pub fn new(
+        bandwidth: Option<Bandwidth>,
+        codecs: Vec<CodecType>,
+        data_transfer_mode: Option<DataTransferMode>,
+        payload_type: PayloadType,
+        ports: Vec<SdpPort>,
+        port_count: usize,
+        transport_protocol: MediaTransportProtocol,
+        connection_address: Option<IpAddr>,
+    ) -> Self {
+        Self {
+            bandwidth,
+            codecs,
+            data_transfer_mode,
+            payload_type,
+            ports,
+            port_count,
+            transport_protocol,
+            connection_address,
+        }
+    }
+
     /// Returns the bandwidth information for the media description.
     ///
     /// # Returns
@@ -115,6 +141,15 @@ impl MediaDescription {
     pub fn transport_protocol(&self) -> &MediaTransportProtocol {
         &self.transport_protocol
     }
+    
+    /// Returns the connection address if it exists.
+    ///
+    /// # Returns
+    ///
+    /// `Option` for `IpAddr`.
+    pub fn connection_address(&self) -> Option<IpAddr> {
+        self.connection_address
+    }
 }
 
 impl PayloadParser for MediaDescription {
@@ -122,48 +157,56 @@ impl PayloadParser for MediaDescription {
     where
         Self: Sized,
     {
+        let mut connection_address: Option<IpAddr> = None;
         let (top, bot) = data
-            .separate_trimmed(RAW_SEPARATOR, TRIM)
+            .separate_trimmed(NEW_LINE, TRIM_NEW_LINE)
             .ok_or_else(|| ParsingError::from_bytes(data))?;
 
         let (r#type, right) = top
-            .separate(TRIM)
+            .separate(WHITESPACE)
             .ok_or_else(|| ParsingError::from_bytes(data))?;
         let r#type = PayloadType::from_bytes(r#type)?;
 
         let (ports_block, right) = right
-            .separate(TRIM)
+            .separate(WHITESPACE)
             .ok_or_else(|| ParsingError::from_bytes(data))?;
         let ports = get_ports(ports_block)?;
         let port_count = ports.len();
 
         let (transport_protocol, right) = right
-            .separate(TRIM)
+            .separate(WHITESPACE)
             .ok_or_else(|| ParsingError::from_bytes(data))?;
         let transport_protocol = MediaTransportProtocol::from_bytes(transport_protocol)?;
 
         let mut codec_formats = Vec::<u16>::new();
-        while let Some((left, right)) = right.separate_trimmed(TRIM, TRIM) {
+        let mut current = right;
+        while let Some((left, right)) = current.while_separate_trimmed(WHITESPACE, WHITESPACE) {
             let format = left.utf8_to_number::<u16>()?;
             codec_formats.push(format);
-        }
-        if !right.is_empty() {
-            let format = right.utf8_to_number::<u16>()?;
-            codec_formats.push(format);
+            current = right;
         }
         if codec_formats.is_empty() {
             return Err(ParsingError::from_bytes(data));
         }
 
         let (_, bot) = bot
-            .separate_trimmed(RTPMAP, TRIM)
+            .separate_trimmed(RTPMAP_KEY, WHITESPACE)
             .ok_or_else(|| ParsingError::from_bytes(data))?;
 
+        let mut slice = bot;
         let mut codecs: Vec<CodecType> = Vec::new();
-        while let Some((top, bot)) = bot.separate_trimmed(RTPMAP, TRIM) {
-            let codec = CodecType::parse(top)?;
-            codecs.push(codec);
+        if let Some((_, all)) = slice.separate_trimmed(CONNECTION_KEY, TRIM_NEW_LINE) {
+            let (connection, b) = all
+                .separate_trimmed(NEW_LINE, TRIM_NEW_LINE)
+                .ok_or_else(|| ParsingError::from_bytes(data))?;
+            connection_address = Some(get_connection_address(connection)?);
+            slice = b;
         }
+        while let Some((top, bot)) = slice.while_separate_trimmed(RTPMAP_KEY, TRIM_NEW_LINE) {
+            codecs.push(CodecType::parse(top)?);
+            slice = bot;
+        }
+
         if codecs.is_empty() || codecs.len() != codec_formats.len() {
             return Err(ParsingError::from_bytes(data));
         }
@@ -176,6 +219,7 @@ impl PayloadParser for MediaDescription {
             ports,
             port_count,
             transport_protocol,
+            connection_address,
         })
     }
 }
@@ -191,7 +235,7 @@ impl PayloadParser for MediaDescription {
 /// A `Result` containing a vector of `SdpPort` instances if successful, or a `ParsingError` if the parsing fails.
 fn get_ports(ports_block: &[u8]) -> Result<Vec<SdpPort>, ParsingError> {
     let mut ports: Vec<SdpPort> = Vec::new();
-    if let Some((port, count)) = ports_block.separate(PORT_SEPARATOR) {
+    if let Some((port, count)) = ports_block.separate(SLASH) {
         let mut port = port.utf8_to_number::<u16>()?;
         let count = count.utf8_to_number::<u8>()?;
 

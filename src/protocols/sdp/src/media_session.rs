@@ -2,13 +2,12 @@ use super::bandwidth::Bandwidth;
 use crate::{
     address_type::AddressType, data_transfer_mode::DataTransferMode,
     media_attribute::UnknownMediaAttribute, media_description::MediaDescription, origin::Origin,
-    time::timing::Timing, 
-    KEY_VALUE_SEPARATOR, RAW_SEPARATOR, TRIM,
+    time::timing::Timing
 };
 use abstractions::{
     extensions::{array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt},
     instancing::default_instance::DefaultInstance,
-    parsing::{parsing_error::ParsingError, payload_parser::PayloadParser},
+    parsing::{parsing_error::ParsingError, payload_parser::PayloadParser, EQUAL, NEW_LINE, SLASH, TRIM_NEW_LINE, WHITESPACE},
 };
 use http::Uri;
 use std::{
@@ -29,6 +28,7 @@ const TIMING: &[u8] = b"t";
 const MEDIA_DESC: &[u8] = b"m";
 const ATTRIBUTE: &[u8] = b"a";
 
+#[derive(Debug, PartialEq)]
 pub struct MediaSession {
     /// v=  
     protocol_version: i32,
@@ -99,10 +99,10 @@ impl PayloadParser for MediaSession {
     fn parse(data: &[u8]) -> Result<Self, ParsingError> {
         let mut media_attributes: Vec<UnknownMediaAttribute> = Vec::default();
         let mut session = MediaSession::default();
-        let mut slice = data;
+        let mut slice = data.trim(NEW_LINE);
 
-        while let Some((top, bot)) = slice.separate_trimmed(RAW_SEPARATOR, TRIM) {
-            if let Some((left, right)) = top.separate_trimmed(KEY_VALUE_SEPARATOR, TRIM) {
+        while let Some((top, bot)) = slice.while_separate_trimmed(NEW_LINE, TRIM_NEW_LINE) {
+            if let Some((left, right)) = top.separate_trimmed(EQUAL, WHITESPACE) {
                 match left {
                     VERSION => session.set_protocol_version(right.utf8_to_number::<i32>()?),
                     ORIGIN => session.set_originator_of_session(Origin::parse(right)?),
@@ -117,21 +117,17 @@ impl PayloadParser for MediaSession {
                     MEDIA_DESC => {
                         session.set_media_attributes(media_attributes);
                         let mut media_descriptions: Vec<MediaDescription> = Vec::default();
-                        let separator = [MEDIA_DESC, KEY_VALUE_SEPARATOR].concat();
-                        while let Some((top, bot)) = slice[2..].separate_trimmed(separator.as_slice(), TRIM) {
+                        let separator = [MEDIA_DESC, EQUAL].concat();
+                        while let Some((top, bot)) = slice[2..].while_separate_trimmed(separator.as_slice(), WHITESPACE) {
                             let media_desc: MediaDescription = MediaDescription::parse(top)?;
                             media_descriptions.push(media_desc);
                             slice = bot;
-                        }
-                        if !slice.is_empty() {
-                            let media_desc: MediaDescription = MediaDescription::parse(slice.trim(TRIM))?;
-                            media_descriptions.push(media_desc);
                         }
                         session.set_media_descriptions(media_descriptions);
                         break;
                     }
                     ATTRIBUTE => {
-                        if let Some((key, value)) = right.separate_trimmed(TRIM, TRIM) {
+                        if let Some((key, value)) = right.separate_trimmed(WHITESPACE, WHITESPACE) {
                             let media_attribute = UnknownMediaAttribute::new(
                                 key.utf8_to_str()?.to_string(),
                                 Some(value.utf8_to_str()?.to_string()),
@@ -298,11 +294,24 @@ fn get_uri(data: &[u8]) -> Result<Uri, ParsingError> {
     Ok(uri)
 }
 
-fn get_connection_address(data: &[u8]) -> Result<IpAddr, ParsingError> {
-    if let Some((_, next)) = data.separate_trimmed(TRIM, TRIM) {
-        if let Some((_type, address)) = next.separate_trimmed(TRIM, TRIM) {
+pub(crate) fn get_connection_address(data: &[u8]) -> Result<IpAddr, ParsingError> {
+    if let Some((_, next)) = data.separate_trimmed(WHITESPACE, WHITESPACE) {
+        if let Some((_type, address_info)) = next.separate_trimmed(WHITESPACE, WHITESPACE) {
             let addr_type = AddressType::from_bytes(_type).ok_or(ParsingError::from_bytes(data))?;
-            let connection_address = address.utf8_to_str()?;
+            let connection_address: &str;// = address_info.utf8_to_str()?;
+            if let Some((address, other)) = address_info.separate_trimmed(SLASH, WHITESPACE) {
+                if let Some(other, ) {
+                    
+                }
+                
+                connection_address = address.utf8_to_str()?;
+            } 
+            else {
+                connection_address = address_info.utf8_to_str()?;
+                
+            }
+
+
 
             let ip_addr = match addr_type {
                 AddressType::Ipv4 => IpAddr::V4(

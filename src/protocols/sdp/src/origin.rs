@@ -6,13 +6,12 @@ use std::{
 use abstractions::{
     extensions::{array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt}, 
     instancing::default_instance::DefaultInstance, 
-    parsing::{parsing_error::ParsingError, payload_parser::PayloadParser}
+    parsing::{parsing_error::ParsingError, payload_parser::PayloadParser, WHITESPACE}
 };
 
 use crate::{
     address_type::AddressType, 
     network_type::NetworkType, 
-    TRIM
 };
 
 /// Represents the origin field in an SDP message.
@@ -85,19 +84,19 @@ impl Origin {
 impl PayloadParser for Origin {
     fn parse(data: &[u8]) -> Result<Self, ParsingError> {
         let (user_name, other) = data
-            .separate_trimmed(TRIM, TRIM)
+            .separate_trimmed(WHITESPACE, WHITESPACE)
             .ok_or_else(|| ParsingError::from_bytes(data))?;
         let (session_id, other) = other
-            .separate_trimmed(TRIM, TRIM)
+            .separate_trimmed(WHITESPACE, WHITESPACE)
             .ok_or_else(|| ParsingError::from_bytes(data))?;
         let (session_version, other) = other
-            .separate_trimmed(TRIM, TRIM)
+            .separate_trimmed(WHITESPACE, WHITESPACE)
             .ok_or_else(|| ParsingError::from_bytes(data))?;
         let (network_type, other) = other
-            .separate_trimmed(TRIM, TRIM)
+            .separate_trimmed(WHITESPACE, WHITESPACE)
             .ok_or_else(|| ParsingError::from_bytes(data))?;
         let (address_type, network_address) = other
-            .separate_trimmed(TRIM, TRIM)
+            .separate_trimmed(WHITESPACE, WHITESPACE)
             .ok_or_else(|| ParsingError::from_bytes(data))?;
 
         let network_type = NetworkType::from_bytes(network_type)

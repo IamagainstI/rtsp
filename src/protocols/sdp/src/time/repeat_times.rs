@@ -1,10 +1,8 @@
 use abstractions::{
     extensions::{array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt},
-    parsing::{parsing_error::ParsingError, payload_parser::PayloadParser},
+    parsing::{parsing_error::ParsingError, payload_parser::PayloadParser, WHITESPACE},
 };
 use chrono::Duration;
-
-use crate::TRIM;
 
 /// Represents the repeat times field in an SDP message.
 ///
@@ -40,15 +38,15 @@ pub struct RepeatTimes {
 impl PayloadParser for RepeatTimes {
     fn parse(data: &[u8]) -> Result<Self, ParsingError> {
         let (interval, other) = data
-            .separate_trimmed(TRIM, TRIM)
+            .separate_trimmed(WHITESPACE, WHITESPACE)
             .ok_or_else(|| ParsingError::from_bytes(data))?;
 
         let (duration, other) = other
-            .separate_trimmed(TRIM, TRIM)
+            .separate_trimmed(WHITESPACE, WHITESPACE)
             .ok_or_else(|| ParsingError::from_bytes(data))?;
 
         let (offset1, offset2) = other
-            .separate_trimmed(TRIM, TRIM)
+            .separate_trimmed(WHITESPACE, WHITESPACE)
             .ok_or_else(|| ParsingError::from_bytes(data))?;
 
         Ok(RepeatTimes::new(

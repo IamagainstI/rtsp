@@ -1,3 +1,4 @@
+#[derive(Debug, PartialEq)]
 pub struct UnknownMediaAttribute {
     name: String,
     value: Option<String>,

@@ -2,13 +2,11 @@ use abstractions::{
     extensions::{
         array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt
     }, 
-    parsing::{parsing_error::ParsingError, payload_parser::PayloadParser}
+    parsing::{parsing_error::ParsingError, payload_parser::PayloadParser, WHITESPACE}
 };
 use chrono::{
     DateTime, Duration, TimeZone, Utc
 };
-
-use crate::TRIM;
 
 ///The first and second sub-fields give the start and stop times,
 ///respectively, for the session.  These values are the decimal
@@ -43,7 +41,7 @@ impl Default for Timing {
 
 impl PayloadParser for Timing {
     fn parse(data: &[u8]) -> Result<Self, ParsingError> {
-        if let Some((start, stop)) = data.separate_trimmed(TRIM, TRIM) {
+        if let Some((start, stop)) = data.separate_trimmed(WHITESPACE, WHITESPACE) {
             let start_time = start.utf8_to_number::<i64>()?;
             let stop_time = stop.utf8_to_number::<i64>()?;
 
