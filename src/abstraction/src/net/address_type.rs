@@ -10,6 +10,8 @@ impl Default for AddressType {
     }
 }
 
+
+
 impl AddressType {
     pub fn from_str(value: &str) -> Option<AddressType> {
         match value {

@@ -35,8 +35,6 @@ pub mod media_attribute;
 pub mod media_description;
 pub mod data_transfer_mode;
 pub mod payload_type;
-pub mod network_type;
-pub mod address_type;
 pub mod time;
 pub mod sdp_port;
 pub mod transport_protocol;

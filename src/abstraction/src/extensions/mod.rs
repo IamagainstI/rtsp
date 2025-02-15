@@ -4,6 +4,7 @@
 pub mod array_extensions;
 pub mod utf8_array_extensions;
 pub mod cast_error;
+pub mod ip_addr_extensions;
 
 
 /// Represent empty `&[u8]`.

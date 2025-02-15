@@ -4,14 +4,10 @@ use std::{
 };
 
 use abstractions::{
+    net::{address_type::AddressType, network_type::NetworkType},
     extensions::{array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt}, 
     instancing::default_instance::DefaultInstance, 
     parsing::{parsing_error::ParsingError, payload_parser::PayloadParser, WHITESPACE}
-};
-
-use crate::{
-    address_type::AddressType, 
-    network_type::NetworkType, 
 };
 
 /// Represents the origin field in an SDP message.

@@ -1,5 +1,5 @@
 use rstest::rstest;
-use sdp::address_type::AddressType;
+use abstractions::net::address_type::AddressType;
 
 #[rstest]
 #[case("IP4", Some(AddressType::Ipv4))]

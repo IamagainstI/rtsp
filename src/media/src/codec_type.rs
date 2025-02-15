@@ -1,5 +1,5 @@
 use abstractions::{
-    extensions::{array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt},
+    extensions::{array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt, EMPTY_BYTE_SLICE},
     parsing::{
         parsing_error::ParsingError, payload_parser::PayloadParser, NEW_LINE, SLASH, TRIM_NEW_LINE, WHITESPACE
     },
@@ -51,9 +51,12 @@ impl PayloadParser for CodecType {
     where
         Self: Sized,
     {
-        let (rtpmap, bot) = data
-            .separate_trimmed(NEW_LINE, TRIM_NEW_LINE)
-            .ok_or_else(|| ParsingError::from_bytes(data))?;
+        let (rtpmap, bot) = if let Some((top, bot)) = data.separate_trimmed(NEW_LINE, TRIM_NEW_LINE) {
+            (top, bot)
+        }
+        else {
+            (data, EMPTY_BYTE_SLICE)
+        };
 
         let (_, codec_info) = rtpmap
             .separate_trimmed(WHITESPACE, TRIM_NEW_LINE)

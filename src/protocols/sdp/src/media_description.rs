@@ -1,15 +1,12 @@
-use std::net::IpAddr;
-
 use abstractions::{
-    extensions::{array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt},
-    parsing::{
+    extensions::{array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt}, net::connection_addresses::ConnectionAddresses, parsing::{
         parsing_error::ParsingError, payload_parser::PayloadParser, NEW_LINE, SLASH, TRIM_NEW_LINE, WHITESPACE
-    },
+    }
 };
 use media::{codec::RTPMAP_KEY, codec_type::CodecType};
 
 use crate::{
-    bandwidth::Bandwidth, data_transfer_mode::DataTransferMode, media_session::get_connection_address, payload_type::PayloadType, sdp_port::SdpPort, transport_protocol::MediaTransportProtocol
+    bandwidth::Bandwidth, data_transfer_mode::DataTransferMode, payload_type::PayloadType, sdp_port::SdpPort, transport_protocol::MediaTransportProtocol
 };
 
 const CONNECTION_KEY: &[u8] = b"c=";
@@ -53,7 +50,7 @@ pub struct MediaDescription {
     ports: Vec<SdpPort>,
     port_count: usize,
     transport_protocol: MediaTransportProtocol,
-    connection_address: Option<IpAddr>,
+    connection_addresses: Option<ConnectionAddresses>,
 }
 
 impl MediaDescription {
@@ -65,7 +62,7 @@ impl MediaDescription {
         ports: Vec<SdpPort>,
         port_count: usize,
         transport_protocol: MediaTransportProtocol,
-        connection_address: Option<IpAddr>,
+        connection_addresses: Option<ConnectionAddresses>,
     ) -> Self {
         Self {
             bandwidth,
@@ -75,7 +72,7 @@ impl MediaDescription {
             ports,
             port_count,
             transport_protocol,
-            connection_address,
+            connection_addresses,
         }
     }
 
@@ -147,8 +144,8 @@ impl MediaDescription {
     /// # Returns
     ///
     /// `Option` for `IpAddr`.
-    pub fn connection_address(&self) -> Option<IpAddr> {
-        self.connection_address
+    pub fn connection_addresses(&self) -> &Option<ConnectionAddresses> {
+        &self.connection_addresses
     }
 }
 
@@ -157,7 +154,7 @@ impl PayloadParser for MediaDescription {
     where
         Self: Sized,
     {
-        let mut connection_address: Option<IpAddr> = None;
+        let mut connection_address: Option<ConnectionAddresses> = None;
         let (top, bot) = data
             .separate_trimmed(NEW_LINE, TRIM_NEW_LINE)
             .ok_or_else(|| ParsingError::from_bytes(data))?;
@@ -189,19 +186,22 @@ impl PayloadParser for MediaDescription {
             return Err(ParsingError::from_bytes(data));
         }
 
-        let (_, bot) = bot
+        let mut slice = bot;
+        if let Some ((_, bot)) = slice.separate(CONNECTION_KEY) {
+            let (connection, bot) = bot
+                .separate(NEW_LINE)
+                .ok_or_else(|| ParsingError::from_bytes(data))?;
+
+            connection_address = Some(ConnectionAddresses::parse(connection)?);
+            slice = bot;
+        }
+
+        let mut codecs: Vec<CodecType> = Vec::new();
+        let (_, bot) = slice
             .separate_trimmed(RTPMAP_KEY, WHITESPACE)
             .ok_or_else(|| ParsingError::from_bytes(data))?;
+        slice = bot;
 
-        let mut slice = bot;
-        let mut codecs: Vec<CodecType> = Vec::new();
-        if let Some((_, all)) = slice.separate_trimmed(CONNECTION_KEY, TRIM_NEW_LINE) {
-            let (connection, b) = all
-                .separate_trimmed(NEW_LINE, TRIM_NEW_LINE)
-                .ok_or_else(|| ParsingError::from_bytes(data))?;
-            connection_address = Some(get_connection_address(connection)?);
-            slice = b;
-        }
         while let Some((top, bot)) = slice.while_separate_trimmed(RTPMAP_KEY, TRIM_NEW_LINE) {
             codecs.push(CodecType::parse(top)?);
             slice = bot;
@@ -219,7 +219,7 @@ impl PayloadParser for MediaDescription {
             ports,
             port_count,
             transport_protocol,
-            connection_address,
+            connection_addresses: connection_address,
         })
     }
 }

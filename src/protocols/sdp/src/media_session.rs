@@ -1,17 +1,16 @@
 use super::bandwidth::Bandwidth;
 use crate::{
-    address_type::AddressType, data_transfer_mode::DataTransferMode,
+    data_transfer_mode::DataTransferMode,
     media_attribute::UnknownMediaAttribute, media_description::MediaDescription, origin::Origin,
     time::timing::Timing
 };
+
 use abstractions::{
-    extensions::{array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt},
-    instancing::default_instance::DefaultInstance,
-    parsing::{parsing_error::ParsingError, payload_parser::PayloadParser, EQUAL, NEW_LINE, SLASH, TRIM_NEW_LINE, WHITESPACE},
+    extensions::{array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt}, instancing::default_instance::DefaultInstance, net::connection_addresses::ConnectionAddresses, parsing::{parsing_error::ParsingError, payload_parser::PayloadParser, EQUAL, NEW_LINE, TRIM_NEW_LINE, WHITESPACE}
 };
 use http::Uri;
 use std::{
-    net::{IpAddr, Ipv4Addr, Ipv6Addr},
+    net::IpAddr,
     str::FromStr,
 };
 
@@ -55,7 +54,7 @@ pub struct MediaSession {
     network_address: IpAddr,
 
     /// c=
-    connection_address: Option<IpAddr>,
+    connection_addresses: Option<ConnectionAddresses>,
 
     /// k=
     encryption_key: Option<String>,
@@ -84,7 +83,7 @@ impl Default for MediaSession {
             email_address: None,
             phone_number: None,
             network_address: DefaultInstance::default(),
-            connection_address: None,
+            connection_addresses: None,
             encryption_key: None,
             bandwidth: None,
             timing: None,
@@ -111,14 +110,16 @@ impl PayloadParser for MediaSession {
                     URI => session.set_uri_of_description(Some(get_uri(right)?)),
                     EMAIL => session.set_email_address(Some(right.utf8_to_str()?.to_string())),
                     PHONE => session.set_phone_number(Some(right.utf8_to_str()?.to_string())),
-                    CONNECTION => session.set_connection_address(Some(get_connection_address(right)?)),
+                    CONNECTION => session.set_connection_address(Some(ConnectionAddresses::parse(right)?)),
                     BANDWIDTH => session.set_bandwidth(Some(Bandwidth::parse(data)?)),
                     TIMING => session.set_timing(Some(Timing::parse(right)?)),
                     MEDIA_DESC => {
                         session.set_media_attributes(media_attributes);
                         let mut media_descriptions: Vec<MediaDescription> = Vec::default();
                         let separator = [MEDIA_DESC, EQUAL].concat();
-                        while let Some((top, bot)) = slice[2..].while_separate_trimmed(separator.as_slice(), WHITESPACE) {
+                        (_, slice) = slice.separate(separator.as_slice()).ok_or_else(|| ParsingError::from_bytes(data))?;
+
+                        while let Some((top, bot)) = slice.while_separate_trimmed(separator.as_slice(), WHITESPACE) {
                             let media_desc: MediaDescription = MediaDescription::parse(top)?;
                             media_descriptions.push(media_desc);
                             slice = bot;
@@ -188,8 +189,8 @@ impl MediaSession {
         self.network_address
     }
 
-    pub fn connection_address(&self) -> Option<IpAddr> {
-        self.connection_address
+    pub fn connection_address(&self) -> &Option<ConnectionAddresses> {
+        &self.connection_addresses
     }
 
     pub fn encryption_key(&self) -> Option<&String> {
@@ -248,8 +249,8 @@ impl MediaSession {
         self.network_address = network_address;
     }
 
-    fn set_connection_address(&mut self, connection_address: Option<IpAddr>) {
-        self.connection_address = connection_address;
+    fn set_connection_address(&mut self, connection_addresses: Option<ConnectionAddresses>) {
+        self.connection_addresses = connection_addresses;
     }
 
     fn set_encryption_key(&mut self, encryption_key: Option<String>) {
@@ -277,11 +278,8 @@ impl MediaSession {
     }
 
     fn is_valid(&self) -> bool {
-        self.protocol_version != i32::default()
-            && self.originator_of_session != Origin::default()
+        self.originator_of_session != Origin::default()
             && self.session_name != String::default()
-            && self.network_address != IpAddr::default()
-            && !self.media_attributes.is_empty()
             && !self.media_descriptions.is_empty()
     }
     
@@ -289,42 +287,5 @@ impl MediaSession {
 }
 
 fn get_uri(data: &[u8]) -> Result<Uri, ParsingError> {
-    let uri_str = data.utf8_to_str()?;
-    let uri = Uri::from_str(uri_str).map_err(|_| ParsingError::from_bytes(data))?;
-    Ok(uri)
-}
-
-pub(crate) fn get_connection_address(data: &[u8]) -> Result<IpAddr, ParsingError> {
-    if let Some((_, next)) = data.separate_trimmed(WHITESPACE, WHITESPACE) {
-        if let Some((_type, address_info)) = next.separate_trimmed(WHITESPACE, WHITESPACE) {
-            let addr_type = AddressType::from_bytes(_type).ok_or(ParsingError::from_bytes(data))?;
-            let connection_address: &str;// = address_info.utf8_to_str()?;
-            if let Some((address, other)) = address_info.separate_trimmed(SLASH, WHITESPACE) {
-                if let Some(other, ) {
-                    
-                }
-                
-                connection_address = address.utf8_to_str()?;
-            } 
-            else {
-                connection_address = address_info.utf8_to_str()?;
-                
-            }
-
-
-
-            let ip_addr = match addr_type {
-                AddressType::Ipv4 => IpAddr::V4(
-                    Ipv4Addr::from_str(connection_address)
-                        .map_err(|_| ParsingError::from_bytes(data))?,
-                ),
-                AddressType::Ipv6 => IpAddr::V6(
-                    Ipv6Addr::from_str(connection_address)
-                        .map_err(|_| ParsingError::from_bytes(data))?,
-                ),
-            };
-            return Ok(ip_addr);
-        }
-    }
-    Err(ParsingError::from_bytes(data))
+    Ok(Uri::try_from(data).map_err(|_| ParsingError::from_bytes(data))?)
 }

@@ -1,6 +1,7 @@
 use std::net::IpAddr;
 use rstest::rstest;
-use sdp::{origin::Origin, network_type::NetworkType, address_type::AddressType};
+use sdp::origin::Origin;
+use abstractions::net::{address_type::AddressType, network_type::NetworkType};
 
 #[rstest]
 #[case(b"jdoe 2890844526 2890842807 IN IP4 192.0.2.10", Ok(Origin::new(

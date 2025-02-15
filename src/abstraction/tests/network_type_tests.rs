@@ -1,5 +1,5 @@
 use rstest::rstest;
-use sdp::network_type::NetworkType;
+use abstractions::net::network_type::NetworkType;
 
 #[rstest]
 #[case("IN", Some(NetworkType::Internet))]
