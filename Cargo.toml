@@ -9,7 +9,9 @@ readme = "README.md"
 [workspace]
 resolver = "2"
 members = [
-    "src/abstraction", "src/media",
+    "src/abstraction", 
+    "src/media", "src/protocols/rtcp", 
+    "src/protocols/rtp",
     "src/protocols/sdp",
     "src/protocols/tpkt",
 ]

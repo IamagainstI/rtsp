@@ -1,18 +1,18 @@
 use super::bandwidth::Bandwidth;
 use crate::{
-    data_transfer_mode::DataTransferMode,
-    media_attribute::UnknownMediaAttribute, media_description::MediaDescription, origin::Origin,
-    time::timing::Timing
+    data_transfer_mode::DataTransferMode, media_attribute::UnknownMediaAttribute,
+    media_description::MediaDescription, origin::Origin, time::timing::Timing,
 };
 
 use abstractions::{
-    extensions::{array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt}, instancing::default_instance::DefaultInstance, net::connection_addresses::ConnectionAddresses, parsing::{parsing_error::ParsingError, payload_parser::PayloadParser, EQUAL, NEW_LINE, TRIM_NEW_LINE, WHITESPACE}
+    extensions::{array_extensions::ArrayExt, utf8_array_extensions::U8ArrayExt},
+    net::connection_addresses::ConnectionAddresses,
+    parsing::{
+        parsing_error::ParsingError, payload_parser::PayloadParser,
+        EQUAL, NEW_LINE, TRIM_NEW_LINE, WHITESPACE,
+    },
 };
 use http::Uri;
-use std::{
-    net::IpAddr,
-    str::FromStr,
-};
 
 const VERSION: &[u8] = b"v";
 const ORIGIN: &[u8] = b"o";
@@ -32,7 +32,7 @@ pub struct MediaSession {
     /// v=  
     protocol_version: i32,
 
-    ///   
+    /// o=
     originator_of_session: Origin,
 
     /// s=
@@ -49,9 +49,6 @@ pub struct MediaSession {
 
     /// p=
     phone_number: Option<String>,
-
-    /// o= [3]
-    network_address: IpAddr,
 
     /// c=
     connection_addresses: Option<ConnectionAddresses>,
@@ -82,7 +79,6 @@ impl Default for MediaSession {
             uri_of_description: None,
             email_address: None,
             phone_number: None,
-            network_address: DefaultInstance::default(),
             connection_addresses: None,
             encryption_key: None,
             bandwidth: None,
@@ -110,16 +106,22 @@ impl PayloadParser for MediaSession {
                     URI => session.set_uri_of_description(Some(get_uri(right)?)),
                     EMAIL => session.set_email_address(Some(right.utf8_to_str()?.to_string())),
                     PHONE => session.set_phone_number(Some(right.utf8_to_str()?.to_string())),
-                    CONNECTION => session.set_connection_address(Some(ConnectionAddresses::parse(right)?)),
+                    CONNECTION => {
+                        session.set_connection_address(Some(ConnectionAddresses::parse(right)?))
+                    }
                     BANDWIDTH => session.set_bandwidth(Some(Bandwidth::parse(data)?)),
                     TIMING => session.set_timing(Some(Timing::parse(right)?)),
                     MEDIA_DESC => {
                         session.set_media_attributes(media_attributes);
                         let mut media_descriptions: Vec<MediaDescription> = Vec::default();
                         let separator = [MEDIA_DESC, EQUAL].concat();
-                        (_, slice) = slice.separate(separator.as_slice()).ok_or_else(|| ParsingError::from_bytes(data))?;
+                        (_, slice) = slice
+                            .separate(separator.as_slice())
+                            .ok_or_else(|| ParsingError::from_bytes(data))?;
 
-                        while let Some((top, bot)) = slice.while_separate_trimmed(separator.as_slice(), WHITESPACE) {
+                        while let Some((top, bot)) =
+                            slice.while_separate_trimmed(separator.as_slice(), WHITESPACE)
+                        {
                             let media_desc: MediaDescription = MediaDescription::parse(top)?;
                             media_descriptions.push(media_desc);
                             slice = bot;
@@ -137,18 +139,14 @@ impl PayloadParser for MediaSession {
                         } 
                         else if let Some(data_transfer_mode) = DataTransferMode::from_bytes(right) {
                             session.set_data_transfer_mode(Some(data_transfer_mode));
-                        }
+                        } 
                         else {
-                            let media_attribute = UnknownMediaAttribute::new(
-                                right.utf8_to_str()?.to_string(),
-                                None,
-                            );
+                            let media_attribute =
+                                UnknownMediaAttribute::new(right.utf8_to_str()?.to_string(), None);
                             media_attributes.push(media_attribute);
                         }
                     }
-                    _ => {
-                        continue;
-                    }
+                    _ => { continue; }
                 }
             }
             slice = bot;
@@ -185,10 +183,6 @@ impl MediaSession {
         self.phone_number.as_ref()
     }
 
-    pub fn network_address(&self) -> IpAddr {
-        self.network_address
-    }
-
     pub fn connection_address(&self) -> &Option<ConnectionAddresses> {
         &self.connection_addresses
     }
@@ -196,27 +190,27 @@ impl MediaSession {
     pub fn encryption_key(&self) -> Option<&String> {
         self.encryption_key.as_ref()
     }
-    
+
     pub fn bandwidth(&self) -> Option<&Bandwidth> {
         self.bandwidth.as_ref()
     }
-    
+
     pub fn timing(&self) -> Option<&Timing> {
         self.timing.as_ref()
     }
-    
+
     pub fn media_descriptions(&self) -> &[MediaDescription] {
         &self.media_descriptions
     }
-    
+
     pub fn media_attributes(&self) -> &[UnknownMediaAttribute] {
         &self.media_attributes
     }
-    
+
     pub fn data_transfer_mode(&self) -> Option<DataTransferMode> {
         self.data_transfer_mode
     }
-    
+
     fn set_protocol_version(&mut self, protocol_version: i32) {
         self.protocol_version = protocol_version;
     }
@@ -245,10 +239,6 @@ impl MediaSession {
         self.phone_number = phone_number;
     }
 
-    fn set_network_address(&mut self, network_address: IpAddr) {
-        self.network_address = network_address;
-    }
-
     fn set_connection_address(&mut self, connection_addresses: Option<ConnectionAddresses>) {
         self.connection_addresses = connection_addresses;
     }
@@ -270,9 +260,9 @@ impl MediaSession {
     }
 
     fn set_media_attributes(&mut self, media_attributes: Vec<UnknownMediaAttribute>) {
-            self.media_attributes = media_attributes;
-        }
-    
+        self.media_attributes = media_attributes;
+    }
+
     pub fn set_data_transfer_mode(&mut self, data_transfer_mode: Option<DataTransferMode>) {
         self.data_transfer_mode = data_transfer_mode;
     }
@@ -282,8 +272,6 @@ impl MediaSession {
             && self.session_name != String::default()
             && !self.media_descriptions.is_empty()
     }
-    
-    
 }
 
 fn get_uri(data: &[u8]) -> Result<Uri, ParsingError> {

@@ -1,0 +1,8 @@
+[package]
+name = "rtp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+abstractions = { version = "0.1.0", path = "../../abstraction" }
+byteorder = "1.4.3"
